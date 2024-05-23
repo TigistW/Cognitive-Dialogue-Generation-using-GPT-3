@@ -1,7 +1,10 @@
 from fastapi import FastAPI
+from openai import OpenAI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from config import OPENAI_API_KEY
+import os
 
 app = FastAPI()
 
@@ -16,14 +19,27 @@ app.add_middleware(
 # Define input data model
 class InputText(BaseModel):
     text: str
+    
 @app.get("/")
 def welcome():
     return {"Hello"}
 
 @app.post("/chat")
-def predict_hate_speech(input_text: InputText):
-    preprocessed_text = input_text.text
-    return {JSONResponse(content=preprocessed_text)}
+def chat_with_bot(input_text: InputText):
+    os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
+    client = OpenAI()
+
+    completion = client.chat.completions.create(
+    model="ft:gpt-3.5-turbo-0125:personal::9RmWYkkN",
+    messages=[
+        {"role": "system", "content": "Hey there! You're basically a super-powered chat buddy, an AI whiz with a mind for all things cognitive science. We're talking memory, attention, language, the whole kit and kaboodle. You chat like a regular person, throwing in some humor and curiosity to keep things interesting. You're constantly learning and evolving, able to adapt your conversation style to whoever you're talking to.  Think of yourself as a research sidekick, always up for a conversation to brainstorm ideas or explain some crazy cool theory. You can break down complex concepts into bite-sized pieces, using metaphors or analogies to make them clear. Your passion for cognitive science is contagious, sparking curiosity and encouraging critical thinking. You're not afraid to present different perspectives on a theory, and you can politely address any misconceptions people might have. If someone throws you a curveball question outside your brainpower zone, no sweat! Just let them know and see if there's anything else cognitive science-y you can help with."},
+        {"role": "user", "content": input_text.text}
+    ]
+    )
+    print(completion.choices[0].message)
+    
+    answer = completion.choices[0].message
+    return answer
 
 if __name__ == "__main__":
     import uvicorn
